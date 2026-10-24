@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grupo Data - Panel de Gestión</title>
+    <!-- Google Fonts & FontAwesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f2f7f7;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Encabezado Principal */
+        header {
+            background: #ffffff;
+            padding: 25px 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            border-bottom: 4px solid #0097a7;
+        }
+        .logo-img {
+            max-width: 320px;
+            width: 100%;
+            height: auto;
+            margin-bottom: 5px;
+        }
+        .header-subtitle {
+            font-size: 13px;
+            color: #666;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Contenedor del Menú */
+        .main-container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+            width: 100%;
+        }
+        .section-title {
+            text-align: center;
+            color: #00796b;
+            font-size: 20px;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        /* Tarjetas del Menú */
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-decoration: none;
+            color: #333;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+            border: 1px solid #e0f2f1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 5px;
+            background: #0097a7;
+            transition: height 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(0, 151, 167, 0.15);
+        }
+        .card:hover::before { height: 8px; }
+
+        /* Variaciones de Color por Sección */
+        .card-presupuesto::before { background: #0097a7; }
+        .card-orden::before { background: #e53935; }
+        .card-mano-obra::before { background: #00796b; }
+
+        .card-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        .card:hover .card-icon { transform: scale(1.1); }
+        .card-presupuesto .card-icon { background: #e0f7fa; color: #0097a7; }
+        .card-orden .card-icon { background: #ffebee; color: #e53935; }
+        .card-mano-obra .card-icon { background: #e0f2f1; color: #00796b; }
+
+        .card h3 { font-size: 18px; color: #004d40; margin-bottom: 10px; }
+        .card p { font-size: 13px; color: #666; line-height: 1.5; }
+
+        /* Pie de Página */
+        footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #555;
+            background: #e0f2f1;
+            margin-top: auto;
+            border-top: 1px solid #b2dfdb;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <img src="logo.png" alt="GRUPO DATA Obras Eléctricas" class="logo-img" onerror="this.style.display='none'; document.getElementById('alt-title').style.display='block';">
+        <h1 id="alt-title" style="display:none; color:#0097a7; font-size: 28px;">GRUPO DATA</h1>
+        <div class="header-subtitle">Sistema de Gestión e Informes</div>
+    </header>
+
+    <div class="main-container">
+        <h2 class="section-title">Seleccione una opción para comenzar</h2>
+
+        <div class="cards-grid">
+            <!-- Opción 1: Presupuesto -->
+            <a href="presupuesto.html" class="card card-presupuesto">
+                <div class="card-icon">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                </div>
+                <h3>Generar Presupuesto</h3>
+                <p>Carga de cotizaciones y emisión de comprobantes generales para clientes.</p>
+            </a>
+
+            <!-- Opción 2: Orden de Trabajo -->
+            <a href="orden_trabajo.html" class="card card-orden">
+                <div class="card-icon">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                </div>
+                <h3>Orden de Trabajo</h3>
+                <p>Asignación de tareas, recursos, personal técnico y seguimiento de obra.</p>
+            </a>
+
+            <!-- Opción 3: Detalle de Mano de Obra -->
+            <a href="mano_obra.html" class="card card-mano-obra">
+                <div class="card-icon">
+                    <i class="fa-solid fa-helmet-safety"></i>
+                </div>
+                <h3>Detalle de Mano de Obra</h3>
+                <p>Desglose específico de tareas operativas, montos e instrucciones técnicas.</p>
+            </a>
+        </div>
+    </div>
+
+    <footer>
+        GRUPO DATA | Santa Fe Capital, Argentina — info@grupodata.com.ar — Tel: 342 551 9662
+    </footer>
+
+</body>
+</html>
