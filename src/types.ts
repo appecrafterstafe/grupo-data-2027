@@ -53,4 +53,25 @@ export interface ManoObraData {
   obs: string;
 }
 
-export type ActiveTab = 'home' | 'presupuesto' | 'orden' | 'mano_obra' | 'audit';
+export interface PlanTareaItem {
+  id: string;
+  dia: 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes' | 'Sábado';
+  obra: string;
+  tarea: string;
+  personal: string;
+  movil: string;
+  estado: 'Programado' | 'En curso' | 'Finalizado' | 'Pendiente';
+}
+
+export interface PlanificacionData {
+  semanaNumero: string;
+  fechaInicio: string;
+  fechaFin: string;
+  coordinador: string;
+  tareas: PlanTareaItem[];
+  materialesCriticos: string;
+  seguridadYClima: string;
+  obs: string;
+}
+
+export type ActiveTab = 'home' | 'presupuesto' | 'orden' | 'mano_obra' | 'planificacion';

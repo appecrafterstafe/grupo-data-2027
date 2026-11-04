@@ -17,13 +17,11 @@ import {
 interface OrdenTrabajoViewProps {
   data: OrdenTrabajoData;
   onChange: (data: OrdenTrabajoData) => void;
-  onLoadSample: () => void;
 }
 
 export const OrdenTrabajoView: React.FC<OrdenTrabajoViewProps> = ({
   data,
   onChange,
-  onLoadSample,
 }) => {
   const docRef = useRef<HTMLDivElement>(null);
 
@@ -150,14 +148,6 @@ export const OrdenTrabajoView: React.FC<OrdenTrabajoViewProps> = ({
                 <ClipboardList className="w-5 h-5 text-rose-600" />
                 Carga de Orden de Trabajo
               </h2>
-              <button
-                type="button"
-                onClick={onLoadSample}
-                className="text-xs font-semibold px-2.5 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-lg transition flex items-center gap-1 border border-rose-200"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                Datos Ejemplo
-              </button>
             </div>
 
             {/* General Fields Grid */}

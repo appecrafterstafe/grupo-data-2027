@@ -5,7 +5,7 @@ import {
   ClipboardList, 
   HardHat, 
   Home, 
-  Wrench, 
+  CalendarDays, 
   Printer, 
   Download, 
   CloudUpload,
@@ -112,20 +112,21 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             <button
-              onClick={() => setActiveTab('audit')}
+              onClick={() => setActiveTab('planificacion')}
               className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
-                activeTab === 'audit'
-                  ? 'bg-amber-600 text-white shadow-xs font-semibold'
-                  : 'text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200'
+                activeTab === 'planificacion'
+                  ? 'bg-indigo-700 text-white shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-indigo-800 hover:bg-indigo-50'
               }`}
             >
-              <Wrench className="w-4 h-4" />
-              <span className="font-semibold">Correcciones Vercel</span>
+              <CalendarDays className="w-4 h-4" />
+              <span className="hidden sm:inline">Planificación Semanal</span>
+              <span className="sm:hidden">Plan</span>
             </button>
           </nav>
 
           {/* Quick Actions for active document */}
-          {activeTab !== 'home' && activeTab !== 'audit' && (
+          {activeTab !== 'home' && (
             <div className="hidden lg:flex items-center gap-2">
               {onResetData && (
                 <button

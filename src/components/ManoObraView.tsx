@@ -17,13 +17,11 @@ import {
 interface ManoObraViewProps {
   data: ManoObraData;
   onChange: (data: ManoObraData) => void;
-  onLoadSample: () => void;
 }
 
 export const ManoObraView: React.FC<ManoObraViewProps> = ({
   data,
   onChange,
-  onLoadSample,
 }) => {
   const docRef = useRef<HTMLDivElement>(null);
 
@@ -169,14 +167,6 @@ export const ManoObraView: React.FC<ManoObraViewProps> = ({
                 <HardHat className="w-5 h-5 text-emerald-700" />
                 Carga de Mano de Obra
               </h2>
-              <button
-                type="button"
-                onClick={onLoadSample}
-                className="text-xs font-semibold px-2.5 py-1.5 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 rounded-lg transition flex items-center gap-1 border border-emerald-200"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                Datos Ejemplo
-              </button>
             </div>
 
             {/* General Fields Grid */}

@@ -17,13 +17,11 @@ import {
 interface PresupuestoViewProps {
   data: PresupuestoData;
   onChange: (data: PresupuestoData) => void;
-  onLoadSample: () => void;
 }
 
 export const PresupuestoView: React.FC<PresupuestoViewProps> = ({
   data,
   onChange,
-  onLoadSample,
 }) => {
   const docRef = useRef<HTMLDivElement>(null);
 
@@ -171,14 +169,6 @@ export const PresupuestoView: React.FC<PresupuestoViewProps> = ({
                 <FileSpreadsheet className="w-5 h-5 text-cyan-600" />
                 Carga de Presupuesto
               </h2>
-              <button
-                type="button"
-                onClick={onLoadSample}
-                className="text-xs font-semibold px-2.5 py-1.5 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 rounded-lg transition flex items-center gap-1 border border-cyan-200"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                Datos Ejemplo
-              </button>
             </div>
 
             {/* General Fields Grid */}

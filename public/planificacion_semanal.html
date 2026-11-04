@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planificación Semanal - Grupo Data</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Librerías externas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; color: #333; padding: 20px; }
+        
+        .top-nav {
+            max-width: 1000px;
+            margin: 0 auto 15px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-back {
+            text-decoration: none;
+            background: #ffffff;
+            color: #3f51b5;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            border: 1px solid #c5cae9;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-back:hover { background: #e8eaf6; }
+
+        .editor-container {
+            max-width: 1000px;
+            margin: 0 auto 30px auto;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border-top: 5px solid #3f51b5;
+        }
+        .editor-title { font-size: 20px; color: #3f51b5; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group label { font-size: 12px; font-weight: 700; color: #555; text-transform: uppercase; }
+        .form-group input, .form-group textarea, .form-group select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #3f51b5; outline: none; }
+
+        .btn { padding: 10px 18px; border: none; border-radius: 5px; font-weight: 700; cursor: pointer; transition: background 0.2s; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+        .btn-primary { background: #3f51b5; color: white; }
+        .btn-primary:hover { background: #303f9f; }
+        .btn-dark { background: #263238; color: white; }
+        .btn-dark:hover { background: #1a2327; }
+        .btn-success { background: #28a745; color: white; margin-top: 10px; }
+        .btn-danger { background: #e53935; color: white; padding: 5px 8px; font-size: 12px; }
+
+        .pdf-container {
+            width: 210mm;
+            min-height: 297mm;
+            height: auto;
+            padding: 14mm 15mm;
+            margin: 0 auto;
+            background: #ffffff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .pdf-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #3f51b5; padding-bottom: 12px; margin-bottom: 15px; }
+        .header-left img { max-width: 220px; height: auto; }
+        .header-right { text-align: right; }
+        .header-right h1 { color: #3f51b5; font-size: 24px; font-weight: 700; letter-spacing: 1px; }
+        .header-right p { font-size: 13px; color: #555; margin-top: 2px; }
+
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #e8eaf6; border: 1px solid #c5cae9; border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 13px; }
+        .info-item span { font-weight: 700; color: #1a237e; }
+
+        .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px; }
+        .pdf-table th { background: #3f51b5; color: white; padding: 8px 10px; text-align: left; font-weight: 600; }
+        .pdf-table td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+        .pdf-table tr:nth-child(even) { background: #fafafa; }
+        
+        .text-center { text-align: center; }
+
+        .bottom-section { display: flex; flex-direction: column; gap: 15px; margin-top: auto; padding-top: 10px; }
+        .cond-block { background: #fdfefe; border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px; }
+        .cond-title { font-weight: 700; color: #3f51b5; text-transform: uppercase; font-size: 11px; margin-bottom: 4px; }
+        .cond-text { font-size: 11px; color: #444; white-space: pre-wrap; }
+
+        .pdf-footer { margin-top: 25px; border-top: 1px solid #ddd; padding-top: 15px; }
+        .signature-area { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .signature-line { width: 45%; border-top: 1px dashed #777; text-align: center; font-size: 11px; color: #555; padding-top: 5px; }
+
+        .contact-bar { background: #0097a7; color: white; font-size: 10px; text-align: center; padding: 8px; border-radius: 4px; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px; }
+
+        @media print {
+            body { background: none; padding: 0; margin: 0; }
+            .editor-container, .no-print, .top-nav { display: none !important; }
+            .pdf-container { box-shadow: none; width: 100%; height: auto; min-height: auto; padding: 5mm; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav no-print">
+        <a href="index.html" class="btn-back">
+            <i class="fa-solid fa-arrow-left"></i> Volver al Panel Principal
+        </a>
+    </div>
+
+    <div class="editor-container no-print">
+        <h2 class="editor-title"><i class="fa-solid fa-calendar-days"></i> Carga de Planificación Semanal</h2>
+        
+        <div class="form-grid">
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Semana / Período</label>
+                <input type="text" id="in-semana" placeholder="Ej. Semana 46 (10 al 15 de Noviembre)" oninput="actualizarComprobante()">
+            </div>
+            <div class="form-group">
+                <label>Fecha Desde (Lunes)</label>
+                <input type="date" id="in-desde" onchange="actualizarComprobante()">
+            </div>
+            <div class="form-group">
+                <label>Fecha Hasta (Viernes/Sáb)</label>
+                <input type="date" id="in-hasta" onchange="actualizarComprobante()">
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Coordinador de Operaciones</label>
+                <input type="text" id="in-coordinador" placeholder="Ej. Ing. Marcelo Gómez / Téc. Cristian Vega" oninput="actualizarComprobante()">
+            </div>
+        </div>
+
+        <h3 style="font-size: 14px; margin-bottom: 10px; color: #3f51b5;">Asignación de Cuadrillas</h3>
+        <div class="form-grid" style="grid-template-columns: 1fr 2fr 3fr 1.5fr auto;">
+            <div class="form-group">
+                <label>Día</label>
+                <select id="task-dia">
+                    <option value="Lunes">Lunes</option>
+                    <option value="Martes">Martes</option>
+                    <option value="Miércoles">Miércoles</option>
+                    <option value="Jueves">Jueves</option>
+                    <option value="Viernes">Viernes</option>
+                    <option value="Sábado">Sábado</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Obra / Frente</label>
+                <input type="text" id="task-obra" placeholder="Ej. Parque Industrial">
+            </div>
+            <div class="form-group">
+                <label>Tareas a Realizar</label>
+                <input type="text" id="task-desc" placeholder="Ej. Zanjeo y acometida principal">
+            </div>
+            <div class="form-group">
+                <label>Personal / Móvil</label>
+                <input type="text" id="task-personal" placeholder="Ej. Vega / Roldán (Móvil 1)">
+            </div>
+            <div class="form-group" style="justify-content: flex-end;">
+                <button class="btn btn-success" onclick="agregarTarea()"><i class="fa-solid fa-plus"></i></button>
+            </div>
+        </div>
+
+        <div class="form-grid" style="margin-top: 15px;">
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Materiales Críticos a Despachar / Retirar</label>
+                <textarea rows="2" id="in-materiales" placeholder="Insumos esenciales para no frenar obra..." oninput="actualizarComprobante()"></textarea>
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Seguridad y Cortes Programados EPE</label>
+                <textarea rows="2" id="in-seguridad" placeholder="Cortes de tensión coordinados, arnés de altura, etc." oninput="actualizarComprobante()"></textarea>
+            </div>
+        </div>
+
+        <div style="text-align: right; margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-dark" onclick="descargarPDFDirecto()">
+                <i class="fa-solid fa-download"></i> Descargar PDF
+            </button>
+            <button class="btn btn-primary" onclick="window.print()">
+                <i class="fa-solid fa-print"></i> Imprimir / Guardar PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Documento PDF -->
+    <div class="pdf-container">
+        <div>
+            <div class="pdf-header">
+                <div class="header-left">
+                    <img src="logo.png" alt="Grupo Data Logo" onerror="this.style.display='none'; document.getElementById('alt-logo-plan').style.display='block';">
+                    <div id="alt-logo-plan" style="display:none; font-size:22px; font-weight:bold; color:#3f51b5;">GRUPO DATA</div>
+                </div>
+                <div class="header-right">
+                    <h1>PLANIFICACIÓN SEMANAL</h1>
+                    <p><strong>Período:</strong> <span id="out-semana">----</span></p>
+                    <p><strong>Rango:</strong> <span id="out-rango">--/--/---- al --/--/----</span></p>
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item"><span>Coordinador de Operaciones:</span> <span id="out-coordinador">----</span></div>
+                <div class="info-item"><span>Frentes Asignados:</span> <span id="out-total-frentes">0 frentes</span></div>
+            </div>
+
+            <table class="pdf-table">
+                <thead>
+                    <tr>
+                        <th class="text-center" style="width: 70px;">Día</th>
+                        <th style="width: 160px;">Obra / Frente</th>
+                        <th>Tareas a Realizar</th>
+                        <th style="width: 140px;">Personal / Móvil</th>
+                        <th class="text-center no-print" style="width: 40px;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-tareas">
+                    <!-- Dinámico -->
+                </tbody>
+            </table>
+        </div>
+
+        <div>
+            <div class="bottom-section">
+                <div class="cond-block">
+                    <div class="cond-title">Materiales Críticos a Despachar / Retirar</div>
+                    <div class="cond-text" id="out-materiales">----</div>
+                </div>
+                <div class="cond-block">
+                    <div class="cond-title">Seguridad y Cortes Programados EPE</div>
+                    <div class="cond-text" id="out-seguridad">----</div>
+                </div>
+            </div>
+
+            <div class="pdf-footer">
+                <div class="signature-area">
+                    <div class="signature-line">COORDINADOR DE OPERACIONES</div>
+                    <div class="signature-line">DIRECCIÓN TÉCNICA</div>
+                </div>
+                <div class="contact-bar">
+                    <span>GRUPO DATA | OBRAS ELÉCTRICAS</span>
+                    <span>info@grupodata.com.ar</span>
+                    <span>342 551 9662</span>
+                    <span>www.grupodata.com.ar</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tareas = [];
+
+        function actualizarComprobante() {
+            document.getElementById('out-semana').innerText = document.getElementById('in-semana').value || '----';
+            
+            const desde = document.getElementById('in-desde').value;
+            const hasta = document.getElementById('in-hasta').value;
+            let rangoTxt = '--/--/---- al --/--/----';
+            if (desde && hasta) {
+                const [y1, m1, d1] = desde.split('-');
+                const [y2, m2, d2] = hasta.split('-');
+                rangoTxt = `${d1}/${m1}/${y1} al ${d2}/${m2}/${y2}`;
+            }
+            document.getElementById('out-rango').innerText = rangoTxt;
+            document.getElementById('out-coordinador').innerText = document.getElementById('in-coordinador').value || '----';
+            document.getElementById('out-materiales').innerText = document.getElementById('in-materiales').value || '----';
+            document.getElementById('out-seguridad').innerText = document.getElementById('in-seguridad').value || '----';
+        }
+
+        function renderizarTabla() {
+            const tbody = document.getElementById('tabla-tareas');
+            tbody.innerHTML = '';
+            tareas.forEach((t, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-center font-bold" style="font-weight: 700; color: #1a237e;">${t.dia}</td>
+                    <td style="font-weight: 600;">${t.obra}</td>
+                    <td>${t.desc}</td>
+                    <td>${t.personal}</td>
+                    <td class="text-center no-print">
+                        <button class="btn btn-danger" onclick="eliminarTarea(${index})"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('out-total-frentes').innerText = `${tareas.length} frentes programados`;
+        }
+
+        function agregarTarea() {
+            const dia = document.getElementById('task-dia').value;
+            const obra = document.getElementById('task-obra').value.trim();
+            const desc = document.getElementById('task-desc').value.trim();
+            const personal = document.getElementById('task-personal').value.trim();
+
+            if(!obra || !desc) {
+                alert('Por favor complete la Obra y la Tarea a realizar.');
+                return;
+            }
+
+            tareas.push({ dia, obra, desc, personal: personal || 'A designar' });
+            document.getElementById('task-obra').value = '';
+            document.getElementById('task-desc').value = '';
+            document.getElementById('task-personal').value = '';
+            renderizarTabla();
+        }
+
+        function eliminarTarea(index) {
+            tareas.splice(index, 1);
+            renderizarTabla();
+        }
+
+        async function descargarPDFDirecto() {
+            const element = document.querySelector('.pdf-container');
+            const sem = document.getElementById('in-semana').value || 'Semana';
+            const acciones = document.querySelectorAll('.no-print');
+            acciones.forEach(el => el.style.display = 'none');
+
+            const opt = {
+                margin: 8,
+                filename: `Planificacion_Semanal_${sem}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            try {
+                await html2pdf().set(opt).from(element).save();
+            } finally {
+                acciones.forEach(el => el.style.display = '');
+            }
+        }
+    </script>
+</body>
+</html>

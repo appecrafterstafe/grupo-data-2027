@@ -1,149 +1,112 @@
 import React, { useState, useEffect } from 'react';
-import { ActiveTab, PresupuestoData, OrdenTrabajoData, ManoObraData } from './types';
+import { ActiveTab, PresupuestoData, OrdenTrabajoData, ManoObraData, PlanificacionData } from './types';
 import { Navbar } from './components/Navbar';
 import { HomeDashboard } from './components/HomeDashboard';
 import { PresupuestoView } from './components/PresupuestoView';
 import { OrdenTrabajoView } from './components/OrdenTrabajoView';
 import { ManoObraView } from './components/ManoObraView';
-import { AuditView } from './components/AuditView';
+import { PlanificacionView } from './components/PlanificacionView';
 
-const INITIAL_PRESUPUESTO: PresupuestoData = {
-  numero: '0001-00000124',
-  fecha: new Date().toISOString().split('T')[0],
-  validez: '15 días hábiles',
-  cliente: 'Empresa Constructora del Litoral S.A.',
-  obra: 'Instalación Eléctrica Integral Tablero Principal y Fuerza Motriz',
-  lugar: 'Parque Industrial Sauce Viejo, Santa Fe',
-  items: [
-    {
-      id: '1',
-      desc: 'Provisión y montaje de tablero principal estanco IP65 con interruptor termomagnético 4x63A y disyuntor diferencial 30mA',
-      cant: 1,
-      uni: 'Unid',
-      precio: 485000,
-    },
-    {
-      id: '2',
-      desc: 'Tendido de alimentador subterráneo 4x16mm² XLPE con canalización bajo norma IRAM 2178',
-      cant: 45,
-      uni: 'Mts',
-      precio: 24500,
-    },
-    {
-      id: '3',
-      desc: 'Sistema de puesta a tierra con jabalina de cobre 5/8" x 1.5m, cámara de inspección y protocolo de medición SRT 900/15',
-      cant: 2,
-      uni: 'Kit',
-      precio: 160000,
-    },
-    {
-      id: '4',
-      desc: 'Circuito independiente de iluminación LED industrial High Bay con comando selector manual/automático',
-      cant: 8,
-      uni: 'Bocas',
-      precio: 38000,
-    },
-  ],
-  obs: 'Todos los materiales responden a normativas IRAM y reglamentación AEA 90364. No incluye tasas municipales ni trámites de conexión con la distribuidora EPE.',
-  plazo: '12 días hábiles a partir de la firma de conformidad',
-  pago: '50% anticipo al ordenar insumos y 50% al finalizar las pruebas de carga',
+const getTodayDate = () => new Date().toISOString().split('T')[0];
+
+const EMPTY_PRESUPUESTO: PresupuestoData = {
+  numero: '',
+  fecha: getTodayDate(),
+  validez: '',
+  cliente: '',
+  obra: '',
+  lugar: '',
+  items: [],
+  obs: '',
+  plazo: '',
+  pago: '',
 };
 
-const INITIAL_ORDEN: OrdenTrabajoData = {
-  numero: 'OT-2026-0042',
-  fecha: new Date().toISOString().split('T')[0],
-  cliente: 'Cooperativa Agropecuaria Santa Fe Ltda.',
-  lugar: 'Planta de Silos - Ruta Prov. 1 Km 14',
-  personal: 'Ing. Marcelo Gómez / Téc. Cristian Vega / 2 Operarios',
-  prioridad: 'Alta',
-  items: [
-    {
-      id: '1',
-      desc: 'Inspección termográfica preventiva de tableros seccionales de motores y sinfines',
-      cant: '1 relevamiento',
-    },
-    {
-      id: '2',
-      desc: 'Reajuste de torque y reemplazo de contactor electromagnético bobina 220V 40A en elevador primario',
-      cant: '2 unidades',
-    },
-    {
-      id: '3',
-      desc: 'Verificación de continuidad en conductor de protección PE en toda la línea de molienda',
-      cant: '1 protocolo',
-    },
-    {
-      id: '4',
-      desc: 'Prueba de disparo por pulsador test en disyuntores diferenciales de seguridad',
-      cant: '4 módulos',
-    },
-  ],
-  obs: 'Realizar desenergización programada y bloqueo con candados de seguridad (LOTO) previo a la intervención en barra colectora principal.',
+const EMPTY_ORDEN: OrdenTrabajoData = {
+  numero: '',
+  fecha: getTodayDate(),
+  cliente: '',
+  lugar: '',
+  personal: '',
+  prioridad: 'Normal',
+  items: [],
+  obs: '',
 };
 
-const INITIAL_MANO_OBRA: ManoObraData = {
-  numero: 'MO-2026-088',
-  fecha: new Date().toISOString().split('T')[0],
-  obra: 'Readecuación Eléctrica y Montaje de Bombas Pluviales',
-  lugar: 'Costanera Este, Santa Fe Capital',
-  responsable: 'Téc. Fernando Ruiz (Mat. COPITEC 14.892)',
-  items: [
-    {
-      id: '1',
-      desc: 'Oficial electricista especialista en automatización y cuadros de comando',
-      cant: 32,
-      precio: 18500,
-    },
-    {
-      id: '2',
-      desc: 'Medio oficial electricista en tendido y fijación de bandejas portacables perforadas',
-      cant: 40,
-      precio: 13200,
-    },
-    {
-      id: '3',
-      desc: 'Ayudante montador de canalizaciones y zanjeo de acometida',
-      cant: 24,
-      precio: 9800,
-    },
-    {
-      id: '4',
-      desc: 'Ingeniería de campo, supervisión técnica y confección de planos unifilares conformes a obra',
-      cant: 12,
-      precio: 29000,
-    },
-  ],
-  obs: 'Las jornadas incluyen dotación completa de EPP dieléctricos, seguro de ART con cláusula de no repetición y movilidad propia.',
+const EMPTY_MANO_OBRA: ManoObraData = {
+  numero: '',
+  fecha: getTodayDate(),
+  obra: '',
+  lugar: '',
+  responsable: '',
+  items: [],
+  obs: '',
 };
+
+const EMPTY_PLANIFICACION: PlanificacionData = {
+  semanaNumero: '',
+  fechaInicio: '',
+  fechaFin: '',
+  coordinador: '',
+  tareas: [],
+  materialesCriticos: '',
+  seguridadYClima: '',
+  obs: '',
+};
+
+const STORAGE_KEY_RESET = 'gd_clean_slate_v3';
+
+// Clear previous dummy sample data from localStorage if existing
+if (typeof window !== 'undefined') {
+  try {
+    if (localStorage.getItem(STORAGE_KEY_RESET) !== 'clean') {
+      localStorage.removeItem('gd_presupuesto_data');
+      localStorage.removeItem('gd_orden_data');
+      localStorage.removeItem('gd_mano_obra_data');
+      localStorage.removeItem('gd_planificacion_data');
+      localStorage.setItem(STORAGE_KEY_RESET, 'clean');
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
 
-  // Load from LocalStorage if existing, or use defaults
   const [presupuesto, setPresupuesto] = useState<PresupuestoData>(() => {
     try {
       const saved = localStorage.getItem('gd_presupuesto_data');
-      return saved ? JSON.parse(saved) : INITIAL_PRESUPUESTO;
+      return saved ? JSON.parse(saved) : EMPTY_PRESUPUESTO;
     } catch {
-      return INITIAL_PRESUPUESTO;
+      return EMPTY_PRESUPUESTO;
     }
   });
 
   const [orden, setOrden] = useState<OrdenTrabajoData>(() => {
     try {
       const saved = localStorage.getItem('gd_orden_data');
-      return saved ? JSON.parse(saved) : INITIAL_ORDEN;
+      return saved ? JSON.parse(saved) : EMPTY_ORDEN;
     } catch {
-      return INITIAL_ORDEN;
+      return EMPTY_ORDEN;
     }
   });
 
   const [manoObra, setManoObra] = useState<ManoObraData>(() => {
     try {
       const saved = localStorage.getItem('gd_mano_obra_data');
-      return saved ? JSON.parse(saved) : INITIAL_MANO_OBRA;
+      return saved ? JSON.parse(saved) : EMPTY_MANO_OBRA;
     } catch {
-      return INITIAL_MANO_OBRA;
+      return EMPTY_MANO_OBRA;
+    }
+  });
+
+  const [planificacion, setPlanificacion] = useState<PlanificacionData>(() => {
+    try {
+      const saved = localStorage.getItem('gd_planificacion_data');
+      return saved ? JSON.parse(saved) : EMPTY_PLANIFICACION;
+    } catch {
+      return EMPTY_PLANIFICACION;
     }
   });
 
@@ -172,11 +135,20 @@ export default function App() {
     }
   }, [manoObra]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('gd_planificacion_data', JSON.stringify(planificacion));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [planificacion]);
+
   const handleResetCurrent = () => {
-    if (!window.confirm('¿Desea restablecer los datos de este documento a los valores por defecto?')) return;
-    if (activeTab === 'presupuesto') setPresupuesto(INITIAL_PRESUPUESTO);
-    if (activeTab === 'orden') setOrden(INITIAL_ORDEN);
-    if (activeTab === 'mano_obra') setManoObra(INITIAL_MANO_OBRA);
+    if (!window.confirm('¿Desea limpiar todos los campos de este formulario?')) return;
+    if (activeTab === 'presupuesto') setPresupuesto(EMPTY_PRESUPUESTO);
+    if (activeTab === 'orden') setOrden(EMPTY_ORDEN);
+    if (activeTab === 'mano_obra') setManoObra(EMPTY_MANO_OBRA);
+    if (activeTab === 'planificacion') setPlanificacion(EMPTY_PLANIFICACION);
   };
 
   return (
@@ -196,6 +168,7 @@ export default function App() {
             presupuestoData={presupuesto}
             ordenData={orden}
             manoObraData={manoObra}
+            planificacionData={planificacion}
           />
         )}
 
@@ -203,7 +176,6 @@ export default function App() {
           <PresupuestoView
             data={presupuesto}
             onChange={setPresupuesto}
-            onLoadSample={() => setPresupuesto(INITIAL_PRESUPUESTO)}
           />
         )}
 
@@ -211,7 +183,6 @@ export default function App() {
           <OrdenTrabajoView
             data={orden}
             onChange={setOrden}
-            onLoadSample={() => setOrden(INITIAL_ORDEN)}
           />
         )}
 
@@ -219,11 +190,15 @@ export default function App() {
           <ManoObraView
             data={manoObra}
             onChange={setManoObra}
-            onLoadSample={() => setManoObra(INITIAL_MANO_OBRA)}
           />
         )}
 
-        {activeTab === 'audit' && <AuditView />}
+        {activeTab === 'planificacion' && (
+          <PlanificacionView
+            data={planificacion}
+            onChange={setPlanificacion}
+          />
+        )}
       </main>
 
       {/* Footer */}
@@ -241,7 +216,7 @@ export default function App() {
             <span>•</span>
             <span>Tel: 342 551 9662</span>
             <span>•</span>
-            <span className="text-slate-400 font-mono">v1.2 (Vercel Ready)</span>
+            <span className="text-slate-400 font-mono">v1.3</span>
           </div>
         </div>
       </footer>
