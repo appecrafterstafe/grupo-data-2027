@@ -1,6 +1,6 @@
 {
   "name": "Grupo Data - Sistema de Gestión e Informes",
-  "description": "Sistema de gestión integral para Grupo Data Obras Eléctricas: generación de presupuestos, órdenes de trabajo, detalle de mano de obra y planificación semanal operativa.",
+  "description": "Sistema de gestión integral para Grupo Data Obras Eléctricas: generación de presupuestos, órdenes de trabajo, detalle de mano de obra y planificación semanal y mensual de obras.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

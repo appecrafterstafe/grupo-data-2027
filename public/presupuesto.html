@@ -136,7 +136,7 @@
                 <input type="text" id="in-numero" placeholder="Ej. 0001-00000001" oninput="actualizarComprobante()">
             </div>
             <div class="form-group">
-                <label>Fecha</label>
+                <label>Fecha (DD/MM/AAAA)</label>
                 <input type="date" id="in-fecha" onchange="actualizarComprobante()">
             </div>
             <div class="form-group">
@@ -295,7 +295,7 @@
             const fechaVal = document.getElementById('in-fecha').value;
             if(fechaVal) {
                 const [y, m, d] = fechaVal.split('-');
-                document.getElementById('out-fecha').innerText = `${d}/${m}/${y}`;
+                document.getElementById('out-fecha').innerText = `${d ? d.padStart(2, '0') : ''}/${m ? m.padStart(2, '0') : ''}/${y}`;
             } else {
                 document.getElementById('out-fecha').innerText = '--/--/----';
             }

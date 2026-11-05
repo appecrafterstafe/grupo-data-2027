@@ -155,10 +155,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               <CalendarDays className="w-6 h-6" />
             </div>
             <h2 className="text-base font-bold text-slate-900 mb-1.5 group-hover:text-indigo-800 transition-colors">
-              Planificación Semanal
+              Planificación de Obras
             </h2>
             <p className="text-xs text-slate-600 leading-relaxed mb-6">
-              Cronograma de obras día por día, asignación de cuadrillas, vehículos y materiales críticos.
+              Cronograma operativo con vista semanal y mensual, asignación de tareas por fecha y personal.
             </p>
           </div>
 

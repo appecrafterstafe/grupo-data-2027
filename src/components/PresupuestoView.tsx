@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { PresupuestoData, PresupuestoItem } from '../types';
 import { generatePdfBlob, downloadPdfDirectly } from '../utils/pdfExport';
 import { requestGoogleAccessToken, uploadPdfToDrive } from '../utils/googleDrive';
+import { formatDateDisplay } from '../utils/dateUtils';
 import { 
   Plus, 
   Trash2, 
@@ -125,13 +126,6 @@ export const PresupuestoView: React.FC<PresupuestoViewProps> = ({
     }).format(val).replace('ARS', '$');
   };
 
-  const formatDateDisplay = (isoDate: string) => {
-    if (!isoDate) return '--/--/----';
-    const [y, m, d] = isoDate.split('-');
-    if (!y || !m || !d) return isoDate;
-    return `${d}/${m}/${y}`;
-  };
-
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Status banner */}
@@ -187,9 +181,16 @@ export const PresupuestoView: React.FC<PresupuestoViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
-                  Fecha
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                    Fecha (DD/MM/AAAA)
+                  </label>
+                  {data.fecha && (
+                    <span className="text-[11px] font-semibold text-cyan-700 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
+                      {formatDateDisplay(data.fecha)}
+                    </span>
+                  )}
+                </div>
                 <input
                   type="date"
                   value={data.fecha}

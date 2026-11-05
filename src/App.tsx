@@ -44,13 +44,12 @@ const EMPTY_MANO_OBRA: ManoObraData = {
 };
 
 const EMPTY_PLANIFICACION: PlanificacionData = {
+  mesSeleccionado: getTodayDate().substring(0, 7),
   semanaNumero: '',
   fechaInicio: '',
   fechaFin: '',
   coordinador: '',
   tareas: [],
-  materialesCriticos: '',
-  seguridadYClima: '',
   obs: '',
 };
 

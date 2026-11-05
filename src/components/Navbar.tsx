@@ -120,8 +120,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <CalendarDays className="w-4 h-4" />
-              <span className="hidden sm:inline">Planificación Semanal</span>
-              <span className="sm:hidden">Plan</span>
+              <span>Planificación</span>
             </button>
           </nav>
 

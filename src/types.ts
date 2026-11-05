@@ -55,22 +55,21 @@ export interface ManoObraData {
 
 export interface PlanTareaItem {
   id: string;
-  dia: 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes' | 'Sábado';
+  fecha: string; // YYYY-MM-DD
+  dia: string;   // Lunes, Martes, Miércoles, etc.
   obra: string;
   tarea: string;
   personal: string;
-  movil: string;
   estado: 'Programado' | 'En curso' | 'Finalizado' | 'Pendiente';
 }
 
 export interface PlanificacionData {
+  mesSeleccionado: string; // YYYY-MM
   semanaNumero: string;
   fechaInicio: string;
   fechaFin: string;
   coordinador: string;
   tareas: PlanTareaItem[];
-  materialesCriticos: string;
-  seguridadYClima: string;
   obs: string;
 }
 

@@ -9,15 +9,12 @@ import {
   Download, 
   Printer, 
   CloudUpload, 
-  Sparkles, 
   CheckCircle2, 
   AlertCircle,
-  Truck,
-  Users,
-  Building,
-  Check,
-  Clock,
-  AlertTriangle
+  CalendarRange,
+  ChevronLeft,
+  ChevronRight,
+  Filter
 } from 'lucide-react';
 
 interface PlanificacionViewProps {
@@ -25,14 +22,15 @@ interface PlanificacionViewProps {
   onChange: (data: PlanificacionData) => void;
 }
 
-const DIAS_SEMANA: Array<'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes' | 'Sábado'> = [
-  'Lunes',
-  'Martes',
-  'Miércoles',
-  'Jueves',
-  'Viernes',
-  'Sábado',
-];
+import { 
+  formatDateDisplay, 
+  getDayName, 
+  formatDateRange, 
+  formatMonthName,
+  MONTH_NAMES_ES as MONTH_NAMES, 
+  WEEKDAYS_SHORT_ES as WEEKDAYS 
+} from '../utils/dateUtils';
+
 
 export const PlanificacionView: React.FC<PlanificacionViewProps> = ({
   data,
@@ -40,17 +38,53 @@ export const PlanificacionView: React.FC<PlanificacionViewProps> = ({
 }) => {
   const docRef = useRef<HTMLDivElement>(null);
 
-  // Form state for adding new task
-  const [newDia, setNewDia] = useState<'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes' | 'Sábado'>('Lunes');
-  const [newObra, setNewObra] = useState('');
-  const [newTarea, setNewTarea] = useState('');
-  const [newPersonal, setNewPersonal] = useState('');
-  const [newMovil, setNewMovil] = useState('');
-  const [newEstado, setNewEstado] = useState<'Programado' | 'En curso' | 'Finalizado' | 'Pendiente'>('Programado');
+  // View mode switcher: 'semanal' vs 'mensual'
+  const [viewMode, setViewMode] = useState<'semanal' | 'mensual'>('semanal');
+
+  // Today fallback
+  const todayStr = new Date().toISOString().split('T')[0];
+  const initialYearMonth = data.mesSeleccionado || todayStr.substring(0, 7);
+
+  // Month navigation for monthly view
+  const [currentYearMonth, setCurrentYearMonth] = useState<string>(initialYearMonth);
+
+  // Form state for adding new task (streamlined: only Date, Obra, Tarea, Personal, Estado)
+  const [newFecha, setNewFecha] = useState<string>(todayStr);
+  const [newObra, setNewObra] = useState<string>('');
+  const [newTarea, setNewTarea] = useState<string>('');
+  const [newPersonal, setNewPersonal] = useState<string>('');
+  const [newEstado, setNewEstado] = useState<PlanTareaItem['estado']>('Programado');
 
   // Status feedback
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+
+  // Monthly navigation helpers
+  const [currYear, currMonth] = currentYearMonth.split('-').map(Number);
+
+  const handlePrevMonth = () => {
+    let y = currYear;
+    let m = currMonth - 1;
+    if (m < 1) {
+      m = 12;
+      y -= 1;
+    }
+    const nextYm = `${y}-${String(m).padStart(2, '0')}`;
+    setCurrentYearMonth(nextYm);
+    onChange({ ...data, mesSeleccionado: nextYm });
+  };
+
+  const handleNextMonth = () => {
+    let y = currYear;
+    let m = currMonth + 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+    const nextYm = `${y}-${String(m).padStart(2, '0')}`;
+    setCurrentYearMonth(nextYm);
+    onChange({ ...data, mesSeleccionado: nextYm });
+  };
 
   const handleAddTask = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -59,25 +93,29 @@ export const PlanificacionView: React.FC<PlanificacionViewProps> = ({
       return;
     }
 
+    const diaCalculado = getDayName(newFecha);
+
     const newTask: PlanTareaItem = {
       id: Date.now().toString(),
-      dia: newDia,
+      fecha: newFecha,
+      dia: diaCalculado,
       obra: newObra.trim(),
       tarea: newTarea.trim(),
       personal: newPersonal.trim() || 'A designar',
-      movil: newMovil.trim() || '-',
       estado: newEstado,
     };
 
+    // Sort tasks chronologically
+    const updatedTasks = [...data.tareas, newTask].sort((a, b) => a.fecha.localeCompare(b.fecha));
+
     onChange({
       ...data,
-      tareas: [...data.tareas, newTask],
+      tareas: updatedTasks,
     });
 
     setNewObra('');
     setNewTarea('');
     setNewPersonal('');
-    setNewMovil('');
     setStatusMessage(null);
   };
 
@@ -92,8 +130,10 @@ export const PlanificacionView: React.FC<PlanificacionViewProps> = ({
     if (!docRef.current) return;
     try {
       setIsExporting(true);
-      setStatusMessage({ type: 'info', text: 'Generando PDF de Planificación Semanal...' });
-      const filename = `Planificacion_Semanal_${data.semanaNumero.replace(/\s+/g, '_') || 'Semana'}.pdf`;
+      setStatusMessage({ type: 'info', text: 'Generando PDF de la Planificación...' });
+      const filename = viewMode === 'semanal'
+        ? `Planificacion_Semanal_${data.semanaNumero ? data.semanaNumero.replace(/\s+/g, '_') : 'Semana'}.pdf`
+        : `Planificacion_Mensual_${MONTH_NAMES[currMonth - 1]}_${currYear}.pdf`;
       await downloadPdfDirectly(docRef.current, filename);
       setStatusMessage({ type: 'success', text: '¡Planificación descargada en PDF con éxito!' });
     } catch (err: any) {
@@ -111,9 +151,11 @@ export const PlanificacionView: React.FC<PlanificacionViewProps> = ({
       setStatusMessage({ type: 'info', text: 'Conectando con Google Drive...' });
       
       const token = await requestGoogleAccessToken();
-      setStatusMessage({ type: 'info', text: 'Subiendo Planificación Semanal a Google Drive...' });
+      setStatusMessage({ type: 'info', text: 'Subiendo Planificación a Google Drive...' });
       
-      const filename = `Planificacion_Semanal_${data.semanaNumero.replace(/\s+/g, '_') || 'Semana'}.pdf`;
+      const filename = viewMode === 'semanal'
+        ? `Planificacion_Semanal_${data.semanaNumero ? data.semanaNumero.replace(/\s+/g, '_') : 'Semana'}.pdf`
+        : `Planificacion_Mensual_${MONTH_NAMES[currMonth - 1]}_${currYear}.pdf`;
       const pdfBlob = await generatePdfBlob(docRef.current, filename);
       
       await uploadPdfToDrive(pdfBlob, filename, token);
@@ -129,13 +171,6 @@ export const PlanificacionView: React.FC<PlanificacionViewProps> = ({
     }
   };
 
-  const formatDateDisplay = (isoDate: string) => {
-    if (!isoDate) return '--/--/----';
-    const [y, m, d] = isoDate.split('-');
-    if (!y || !m || !d) return isoDate;
-    return `${d}/${m}/${y}`;
-  };
-
   const getEstadoBadge = (estado: PlanTareaItem['estado']) => {
     switch (estado) {
       case 'Finalizado':
@@ -149,8 +184,69 @@ export const PlanificacionView: React.FC<PlanificacionViewProps> = ({
     }
   };
 
+  // Filter tasks based on current view
+  const monthlyTasks = data.tareas.filter((t) => t.fecha.startsWith(currentYearMonth));
+
+  // Calendar matrix calculation for monthly grid
+  const daysInMonth = new Date(currYear, currMonth, 0).getDate();
+  const firstDayIndex = (new Date(currYear, currMonth - 1, 1).getDay() + 6) % 7; // Monday = 0
+  const calendarCells: Array<{ day: number | null; dateStr: string | null }> = [];
+
+  for (let i = 0; i < firstDayIndex; i++) {
+    calendarCells.push({ day: null, dateStr: null });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${currYear}-${String(currMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    calendarCells.push({ day: d, dateStr });
+  }
+
+  // Active tasks to display in the printable sheet
+  const displayTasks = viewMode === 'mensual' ? monthlyTasks : data.tareas;
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* View Switcher Bar */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 no-print bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-indigo-50 text-indigo-700 rounded-xl">
+            {viewMode === 'semanal' ? <CalendarDays className="w-5 h-5" /> : <CalendarRange className="w-5 h-5" />}
+          </div>
+          <div>
+            <h1 className="text-base font-bold text-slate-900">Planificación de Obras</h1>
+            <p className="text-xs text-slate-500">Selecciona el modo de visualización y emisión</p>
+          </div>
+        </div>
+
+        {/* Segmented Control */}
+        <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
+          <button
+            type="button"
+            onClick={() => setViewMode('semanal')}
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+              viewMode === 'semanal'
+                ? 'bg-white text-indigo-900 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+            <span>Vista Semanal</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setViewMode('mensual')}
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+              viewMode === 'mensual'
+                ? 'bg-indigo-700 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <CalendarRange className="w-3.5 h-3.5" />
+            <span>Vista Mensual</span>
+          </button>
+        </div>
+      </div>
+
       {/* Status banner */}
       {statusMessage && (
         <div 
@@ -177,55 +273,188 @@ export const PlanificacionView: React.FC<PlanificacionViewProps> = ({
         </div>
       )}
 
+      {/* Monthly Interactive Calendar (Only in monthly mode) */}
+      {viewMode === 'mensual' && (
+        <div className="mb-8 bg-white rounded-2xl border border-slate-200 shadow-xs p-5 no-print">
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handlePrevMonth}
+                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 transition"
+                title="Mes anterior"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <h2 className="text-lg font-black text-indigo-950 capitalize">
+                {MONTH_NAMES[currMonth - 1]} {currYear}
+              </h2>
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 transition"
+                title="Mes siguiente"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            <span className="text-xs font-semibold px-2.5 py-1 bg-indigo-50 text-indigo-800 rounded-full border border-indigo-200">
+              {monthlyTasks.length} {monthlyTasks.length === 1 ? 'tarea en este mes' : 'tareas en este mes'}
+            </span>
+          </div>
+
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
+            {WEEKDAYS.map((wd) => (
+              <div key={wd} className="text-center font-bold text-slate-400 text-xs py-1">
+                {wd}
+              </div>
+            ))}
+
+            {calendarCells.map((cell, idx) => {
+              if (!cell.day || !cell.dateStr) {
+                return <div key={`empty-${idx}`} className="h-16 sm:h-20 bg-slate-50/50 rounded-xl" />;
+              }
+
+              const tasksOnDay = data.tareas.filter((t) => t.fecha === cell.dateStr);
+              const isToday = cell.dateStr === todayStr;
+              const isSelectedForForm = cell.dateStr === newFecha;
+
+              return (
+                <div
+                  key={cell.dateStr}
+                  onClick={() => setNewFecha(cell.dateStr!)}
+                  className={`h-16 sm:h-20 p-1.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                    isSelectedForForm
+                      ? 'border-indigo-600 ring-2 ring-indigo-500/20 bg-indigo-50/40'
+                      : isToday
+                      ? 'border-indigo-300 bg-white'
+                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70'
+                  }`}
+                  title={`Clic para agendar tarea el ${formatDateDisplay(cell.dateStr)} (DD/MM/AAAA)`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={`text-xs font-bold leading-none ${
+                      isToday ? 'w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]' : 'text-slate-700'
+                    }`}>
+                      {cell.day}
+                    </span>
+                    {tasksOnDay.length > 0 && (
+                      <span className="text-[10px] font-black text-indigo-700 bg-indigo-100 px-1 rounded">
+                        {tasksOnDay.length}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="overflow-hidden space-y-0.5">
+                    {tasksOnDay.slice(0, 2).map((t) => (
+                      <div 
+                        key={t.id} 
+                        className="text-[9px] truncate font-medium px-1 py-0.5 rounded bg-slate-100 text-slate-800"
+                        title={`${t.obra}: ${t.tarea}`}
+                      >
+                        {t.obra}
+                      </div>
+                    ))}
+                    {tasksOnDay.length > 2 && (
+                      <div className="text-[8px] text-slate-400 text-right">
+                        +{tasksOnDay.length - 2} más
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-slate-400 mt-3 text-right">
+            💡 Haz clic en cualquier día del calendario para seleccionarlo en el formulario de carga.
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
         {/* Editor Form Column */}
         <div className="xl:col-span-5 space-y-6 no-print">
           <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-6 border-t-4 border-t-indigo-600">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold text-indigo-950 flex items-center gap-2">
-                <CalendarDays className="w-5 h-5 text-indigo-600" />
-                Carga de Planificación Semanal
+                {viewMode === 'semanal' ? <CalendarDays className="w-5 h-5 text-indigo-600" /> : <CalendarRange className="w-5 h-5 text-indigo-600" />}
+                {viewMode === 'semanal' ? 'Planificación Semanal' : 'Planificación Mensual'}
               </h2>
             </div>
 
             {/* General Fields Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
-                  Semana / Período
-                </label>
-                <input
-                  type="text"
-                  value={data.semanaNumero}
-                  onChange={(e) => onChange({ ...data, semanaNumero: e.target.value })}
-                  placeholder="Ej. Semana 45 (10 al 15 de Noviembre)"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
+              {viewMode === 'semanal' ? (
+                <>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+                      Semana / Período
+                    </label>
+                    <input
+                      type="text"
+                      value={data.semanaNumero}
+                      onChange={(e) => onChange({ ...data, semanaNumero: e.target.value })}
+                      placeholder="Ej. Semana 46 (10 al 15 de Noviembre)"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
-                  Fecha Desde (Lunes)
-                </label>
-                <input
-                  type="date"
-                  value={data.fechaInicio}
-                  onChange={(e) => onChange({ ...data, fechaInicio: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                        Desde (DD/MM/AAAA)
+                      </label>
+                      {data.fechaInicio && (
+                        <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200">
+                          {formatDateDisplay(data.fechaInicio)}
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="date"
+                      value={data.fechaInicio}
+                      onChange={(e) => onChange({ ...data, fechaInicio: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
-                  Fecha Hasta (Viernes/Sáb)
-                </label>
-                <input
-                  type="date"
-                  value={data.fechaFin}
-                  onChange={(e) => onChange({ ...data, fechaFin: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                        Hasta (DD/MM/AAAA)
+                      </label>
+                      {data.fechaFin && (
+                        <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200">
+                          {formatDateDisplay(data.fechaFin)}
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="date"
+                      value={data.fechaFin}
+                      onChange={(e) => onChange({ ...data, fechaFin: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+                    Mes Seleccionado
+                  </label>
+                  <input
+                    type="month"
+                    value={currentYearMonth}
+                    onChange={(e) => {
+                      setCurrentYearMonth(e.target.value);
+                      onChange({ ...data, mesSeleccionado: e.target.value });
+                    }}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-semibold"
+                  />
+                </div>
+              )}
 
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
@@ -235,32 +464,36 @@ export const PlanificacionView: React.FC<PlanificacionViewProps> = ({
                   type="text"
                   value={data.coordinador}
                   onChange={(e) => onChange({ ...data, coordinador: e.target.value })}
-                  placeholder="Ej. Ing. Martín Benítez / Téc. Cristian Vega"
+                  placeholder="Nombre del encargado o técnico coordinador"
                   className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
               </div>
             </div>
 
-            {/* Add Task Box */}
+            {/* Streamlined Add Task Box */}
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
               <h3 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-3">
-                Asignar Tarea Operativa
+                Asignar Tarea de Obra
               </h3>
               <form onSubmit={handleAddTask} className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase mb-1">
-                      Día
-                    </label>
-                    <select
-                      value={newDia}
-                      onChange={(e) => setNewDia(e.target.value as any)}
-                      className="w-full px-2.5 py-1.5 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-indigo-900"
-                    >
-                      {DIAS_SEMANA.map((d) => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-semibold text-slate-500 uppercase">
+                        Fecha (DD/MM/AAAA)
+                      </label>
+                      {newFecha && (
+                        <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200">
+                          {formatDateDisplay(newFecha)}
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="date"
+                      value={newFecha}
+                      onChange={(e) => setNewFecha(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
+                    />
                   </div>
 
                   <div>
@@ -282,13 +515,13 @@ export const PlanificacionView: React.FC<PlanificacionViewProps> = ({
 
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-500 uppercase mb-1">
-                    Obra / Cliente / Frente
+                    Obra / Cliente
                   </label>
                   <input
                     type="text"
                     value={newObra}
                     onChange={(e) => setNewObra(e.target.value)}
-                    placeholder="Ej. Planta Silos / Barrio Los Sauces"
+                    placeholder="Nombre o ubicación de la obra"
                     className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   />
                 </div>
@@ -301,37 +534,22 @@ export const PlanificacionView: React.FC<PlanificacionViewProps> = ({
                     type="text"
                     value={newTarea}
                     onChange={(e) => setNewTarea(e.target.value)}
-                    placeholder="Ej. Tendido de acometida y conexionado de tablero seccional"
+                    placeholder="Detalle operativo de los trabajos"
                     className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase mb-1">
-                      Personal Asignado
-                    </label>
-                    <input
-                      type="text"
-                      value={newPersonal}
-                      onChange={(e) => setNewPersonal(e.target.value)}
-                      placeholder="Ej. Vega / Roldán (2)"
-                      className="w-full px-2.5 py-1.5 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase mb-1">
-                      Móvil / Vehículo
-                    </label>
-                    <input
-                      type="text"
-                      value={newMovil}
-                      onChange={(e) => setNewMovil(e.target.value)}
-                      placeholder="Ej. Camioneta 01"
-                      className="w-full px-2.5 py-1.5 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase mb-1">
+                    Personal Asignado
+                  </label>
+                  <input
+                    type="text"
+                    value={newPersonal}
+                    onChange={(e) => setNewPersonal(e.target.value)}
+                    placeholder="Ej. Téc. Juan Pérez / Operarios"
+                    className="w-full px-2.5 py-1.5 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
                 </div>
 
                 <button
@@ -344,46 +562,18 @@ export const PlanificacionView: React.FC<PlanificacionViewProps> = ({
               </form>
             </div>
 
-            {/* Critical materials & Safety */}
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
-                  Materiales Críticos a Despachar / Retirar
-                </label>
-                <textarea
-                  rows={2}
-                  value={data.materialesCriticos}
-                  onChange={(e) => onChange({ ...data, materialesCriticos: e.target.value })}
-                  placeholder="Ej. 150m conductor subterráneo 4x10, jabalinas, borneras de seccionamiento..."
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
-                  Avisos de Seguridad / Cortes Programados EPE
-                </label>
-                <textarea
-                  rows={2}
-                  value={data.seguridadYClima}
-                  onChange={(e) => onChange({ ...data, seguridadYClima: e.target.value })}
-                  placeholder="Ej. Miércoles 08:00hs corte EPE subestación. Obligatorio arnés y detector de tensión."
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
-                  Observaciones Generales
-                </label>
-                <input
-                  type="text"
-                  value={data.obs}
-                  onChange={(e) => onChange({ ...data, obs: e.target.value })}
-                  placeholder="Reunión de coordinación lunes 07:30hs en base."
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
+            {/* Observations only */}
+            <div className="mb-6">
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+                Observaciones Generales
+              </label>
+              <textarea
+                rows={2}
+                value={data.obs}
+                onChange={(e) => onChange({ ...data, obs: e.target.value })}
+                placeholder="Aclaraciones o notas del período..."
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+              />
             </div>
 
             {/* Action Bar */}
@@ -448,57 +638,68 @@ export const PlanificacionView: React.FC<PlanificacionViewProps> = ({
 
                 <div className="text-right">
                   <h1 className="text-2xl font-black text-indigo-800 tracking-wide">
-                    PLANIFICACIÓN SEMANAL
+                    {viewMode === 'semanal' ? 'PLANIFICACIÓN SEMANAL' : 'PLANIFICACIÓN MENSUAL'}
                   </h1>
-                  <p className="text-xs text-slate-600 mt-1">
-                    <span className="font-bold text-slate-700">Período:</span> {data.semanaNumero || '----'}
-                  </p>
-                  <p className="text-xs text-slate-600">
-                    <span className="font-bold text-slate-700">Rango:</span> {formatDateDisplay(data.fechaInicio)} al {formatDateDisplay(data.fechaFin)}
-                  </p>
+                  {viewMode === 'semanal' ? (
+                    <>
+                      <p className="text-xs text-slate-600 mt-1">
+                        <span className="font-bold text-slate-700">Período:</span> {data.semanaNumero || '----'}
+                      </p>
+                      <p className="text-xs text-slate-600">
+                        <span className="font-bold text-slate-700">Rango:</span> {formatDateRange(data.fechaInicio, data.fechaFin)}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-slate-600 mt-1">
+                      <span className="font-bold text-slate-700">Mes:</span> {MONTH_NAMES[currMonth - 1]} {currYear}
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Coordinator and Summary Info Grid */}
               <div className="grid grid-cols-2 gap-3 bg-indigo-50/50 border border-indigo-100 rounded-lg p-3 mb-5 text-xs">
                 <div>
-                  <span className="font-bold text-indigo-900">Coordinador Operativo:</span> {data.coordinador || '----'}
+                  <span className="font-bold text-indigo-900">Coordinador de Operaciones:</span> {data.coordinador || '----'}
                 </div>
                 <div>
-                  <span className="font-bold text-indigo-900">Total Tareas Programadas:</span> {data.tareas.length} frentes de obra
+                  <span className="font-bold text-indigo-900">Total Tareas Programadas:</span> {displayTasks.length} {displayTasks.length === 1 ? 'tarea' : 'tareas'}
                 </div>
               </div>
 
-              {/* Tasks Table */}
+              {/* Clean Tasks Table without Clutter */}
               <table className="w-full text-xs border-collapse mb-5">
                 <thead>
                   <tr className="bg-indigo-800 text-white font-semibold">
-                    <th className="py-2 px-2 text-center w-20">Día</th>
-                    <th className="py-2 px-2 text-left w-36">Obra / Frente</th>
+                    <th className="py-2 px-2 text-center w-28">Fecha / Día</th>
+                    <th className="py-2 px-2 text-left w-40">Obra</th>
                     <th className="py-2 px-3 text-left">Tareas a Realizar</th>
-                    <th className="py-2 px-2 text-center w-28">Personal</th>
-                    <th className="py-2 px-2 text-center w-24">Móvil</th>
+                    <th className="py-2 px-2 text-center w-36">Personal Asignado</th>
                     <th className="py-2 px-2 text-center w-24">Estado</th>
                     <th className="py-2 px-1 text-center w-8 no-print">Acción</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {data.tareas.length === 0 ? (
+                  {displayTasks.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-slate-400 italic">
-                        No hay tareas programadas en esta semana.
+                      <td colSpan={6} className="py-8 text-center text-slate-400 italic">
+                        {viewMode === 'semanal' 
+                          ? 'No hay tareas programadas en esta semana.' 
+                          : `No hay tareas programadas para ${MONTH_NAMES[currMonth - 1]} ${currYear}.`}
                       </td>
                     </tr>
                   ) : (
-                    data.tareas.map((task, index) => (
-                      <tr key={task.id} className={index % 2 === 1 ? 'bg-slate-50/70' : 'bg-white'}>
-                        <td className="py-2 px-2 text-center font-bold text-indigo-950">{task.dia}</td>
-                        <td className="py-2 px-2 text-slate-800 font-semibold break-words leading-tight">{task.obra}</td>
-                        <td className="py-2 px-3 text-slate-700 break-words leading-tight">{task.tarea}</td>
-                        <td className="py-2 px-2 text-center text-slate-600 text-[11px]">{task.personal}</td>
-                        <td className="py-2 px-2 text-center text-slate-600 text-[11px]">{task.movil}</td>
-                        <td className="py-2 px-2 text-center">{getEstadoBadge(task.estado)}</td>
-                        <td className="py-2 px-1 text-center no-print">
+                    displayTasks.map((task) => (
+                      <tr key={task.id} className="bg-white hover:bg-slate-50/50">
+                        <td className="py-2.5 px-2 text-center text-[11px] text-slate-700">
+                          <span className="font-bold text-indigo-950 block">{task.dia || getDayName(task.fecha)}</span>
+                          <span className="text-slate-400 font-mono text-[10px]">{formatDateDisplay(task.fecha)}</span>
+                        </td>
+                        <td className="py-2.5 px-2 text-slate-800 font-semibold break-words leading-tight">{task.obra}</td>
+                        <td className="py-2.5 px-3 text-slate-700 break-words leading-tight">{task.tarea}</td>
+                        <td className="py-2.5 px-2 text-center text-slate-600 text-[11px]">{task.personal}</td>
+                        <td className="py-2.5 px-2 text-center">{getEstadoBadge(task.estado)}</td>
+                        <td className="py-2.5 px-1 text-center no-print">
                           <button
                             onClick={() => handleRemoveTask(task.id)}
                             title="Eliminar esta tarea"
@@ -514,35 +715,17 @@ export const PlanificacionView: React.FC<PlanificacionViewProps> = ({
               </table>
             </div>
 
-            {/* Bottom Critical Materials, Safety and Dual Signatures */}
+            {/* Bottom Observations and Signatures */}
             <div className="page-break-avoid">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                <div className="bg-amber-50/60 border border-amber-200 rounded-lg p-3 text-[11px]">
-                  <span className="font-bold text-amber-900 uppercase block mb-1 flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                    Materiales Críticos a Retirar / Despachar
-                  </span>
-                  <p className="text-slate-700 whitespace-pre-wrap">{data.materialesCriticos || '----'}</p>
-                </div>
-
-                <div className="bg-rose-50/50 border border-rose-200 rounded-lg p-3 text-[11px]">
-                  <span className="font-bold text-rose-900 uppercase block mb-1 flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
-                    Seguridad y Cortes Programados EPE
-                  </span>
-                  <p className="text-slate-700 whitespace-pre-wrap">{data.seguridadYClima || '----'}</p>
-                </div>
-              </div>
-
               {data.obs && (
                 <div className="text-[11px] text-slate-600 bg-slate-50 border border-slate-200 rounded-lg p-2.5 mb-6">
                   <span className="font-bold text-slate-800 uppercase block mb-0.5">Observaciones:</span>
-                  <p>{data.obs}</p>
+                  <p className="whitespace-pre-wrap">{data.obs}</p>
                 </div>
               )}
 
               {/* Dual Signature Lines */}
-              <div className="grid grid-cols-2 gap-8 mb-6 pt-4">
+              <div className="grid grid-cols-2 gap-8 mb-6 pt-6">
                 <div className="border-t border-dashed border-slate-400 text-center text-[10px] text-slate-600 pt-1 font-medium">
                   COORDINADOR DE OPERACIONES
                 </div>
